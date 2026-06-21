@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clasificador de Residuos</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
+<style>
+:root{ --seed:#2E7D32; --accent:#62E6B0; }
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0a;}
+.material-symbols-rounded{font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 24;line-height:1;}
+
+/* ---- contenedor a pantalla completa (móvil) ---- */
+#screen{width:100%;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+/* En escritorio: centrado tipo móvil para previsualizar */
+@media(min-width:600px){
+  body{display:flex;align-items:center;justify-content:center;background:#cfd8d2;padding:20px;}
+  #screen{max-width:420px;height:min(880px,96dvh);border-radius:34px;box-shadow:0 24px 60px rgba(0,0,0,.35);}
+}
+
+.views{flex:1;position:relative;overflow:hidden;}
+.view{position:absolute;inset:0;overflow-y:auto;display:none;flex-direction:column;padding:calc(16px + env(safe-area-inset-top)) 22px 0;}
+.view.active{display:flex;animation:fade .25s ease;}
+.view::-webkit-scrollbar{width:0;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* fondos por vista + tema */
+.screen.light #home{background:linear-gradient(180deg,#F2F7F4,#E2EEE6);}
+.screen.dark  #home{background:linear-gradient(180deg,#111615,#0B0F0E);color:#fff;}
+.screen.light #scan{background:linear-gradient(180deg,#F2F7F1,#DBECD6);}
+.screen.dark  #scan{background:linear-gradient(180deg,#121A14,#0B0F0C);color:#fff;}
+.screen.light #info,.screen.light #settings{background:#E4F2E8;}
+.screen.dark  #info,.screen.dark  #settings{background:#0E0E11;color:#fff;}
+
+/* ---- header común ---- */
+.hdr{display:flex;align-items:center;gap:10px;padding-top:14px;}
+.hdr .ico{font-size:30px;}
+.light .hdr .ico{color:var(--seed);} .dark .hdr .ico{color:var(--accent);}
+.hdr .ttl{font-size:24px;font-weight:700;}
+.sub{font-size:14px;margin-top:2px;}
+.light .sub{color:rgba(0,0,0,.54);} .dark .sub{color:rgba(255,255,255,.7);}
+
+/* ---- botones ---- */
+.btn{border:none;border-radius:18px;cursor:pointer;font-weight:700;display:inline-flex;
+  align-items:center;justify-content:center;gap:10px;font-family:inherit;}
+.btn-primary.light{background:var(--seed);color:#fff;}
+.btn-primary.dark{background:var(--accent);color:#000;}
+.btn-outline{background:transparent;border:1.5px solid;}
+.light .btn-outline{border-color:rgba(0,0,0,.45);color:#1a1a1a;}
+.dark .btn-outline{border-color:rgba(255,255,255,.6);color:rgba(255,255,255,.7);}
+
+/* ---- bottom nav ---- */
+.nav{flex:0 0 auto;display:flex;gap:4px;padding:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;z-index:10;}
+.light .nav{background:#fff;box-shadow:0 -4px 16px rgba(0,0,0,.14);}
+.dark .nav{background:#171A19;box-shadow:0 -4px 16px rgba(0,0,0,.35);}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;
+  border-radius:16px;cursor:pointer;transition:background .22s ease;border:none;background:transparent;font-family:inherit;}
+.nav-item .material-symbols-rounded{font-size:24px;}
+.nav-item .lbl{font-size:12px;font-weight:600;}
+.light .nav-item{color:#41514a;} .dark .nav-item{color:rgba(255,255,255,.82);}
+.light .nav-item.active{background:#E3F4EA;color:var(--seed);}
+.dark .nav-item.active{background:#222625;color:var(--accent);}
+.nav-item.active .lbl{font-weight:700;}
+
+/* ===== HOME ===== */
+.feat{display:flex;gap:12px;}
+.feat .b{width:62px;height:62px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
+.feat .b .material-symbols-rounded{font-size:34px;}
+.light .feat .b{background:#E8F4EC;color:var(--seed);} .dark .feat .b{background:#222826;color:var(--accent);}
+.hero{padding:20px 20px 16px;flex:1;display:flex;flex-direction:column;border-radius:24px;margin-top:20px;}
+.light .hero{background:#fff;border:1px solid #CAE2D2;}
+.dark .hero{background:#171C1A;border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 14px rgba(0,0,0,.35);}
+.hero h2{font-size:28px;font-weight:800;line-height:1.1;margin:16px 0 10px;}
+.light .hero h2{color:#1E2A23;} .dark .hero h2{color:#fff;}
+.hero p{font-size:16px;line-height:1.32;}
+.light .hero p{color:rgba(0,0,0,.54);} .dark .hero p{color:rgba(255,255,255,.7);}
+.bullet{display:flex;gap:8px;margin-top:10px;font-size:15px;align-items:flex-start;}
+.bullet .material-symbols-rounded{font-size:18px;margin-top:2px;flex:0 0 auto;}
+.light .bullet{color:rgba(0,0,0,.54);} .dark .bullet{color:rgba(255,255,255,.7);}
+.light .bullet .material-symbols-rounded{color:var(--seed);} .dark .bullet .material-symbols-rounded{color:var(--accent);}
+.start{width:100%;padding:15px;font-size:20px;margin:18px 0 14px;}
+
+/* ===== SCAN ===== */
+.scan-h{display:flex;align-items:center;gap:12px;padding-top:14px;}
+.scan-h .material-symbols-rounded{font-size:30px;}
+.light .scan-h .material-symbols-rounded{color:var(--seed);} .dark .scan-h .material-symbols-rounded{color:var(--accent);}
+.scan-h .t1{font-size:20px;font-weight:700;} .scan-h .t2{font-size:12px;}
+.light .scan-h .t2{color:rgba(0,0,0,.54);} .dark .scan-h .t2{color:rgba(255,255,255,.6);}
+.pbox{width:100%;height:230px;border-radius:22px;margin:22px 0;display:flex;flex-direction:column;gap:12px;
+  align-items:center;justify-content:center;text-align:center;padding:0 24px;}
+.pbox .material-symbols-rounded{font-size:88px;}
+.pbox .cam-hint{font-size:15px;font-weight:600;line-height:1.35;}
+.light .pbox .cam-hint{color:rgba(0,0,0,.5);} .dark .pbox .cam-hint{color:rgba(255,255,255,.6);}
+.light .pbox{background:#fff;border:1.4px solid #2E7D32;color:var(--seed);box-shadow:0 6px 12px rgba(0,0,0,.12);}
+.dark .pbox{background:#1F1F1F;border:1.4px solid var(--accent);color:var(--accent);box-shadow:0 6px 12px rgba(0,0,0,.5);}
+.pbox.empty{border-style:dashed;}
+.scan-act{display:flex;gap:16px;justify-content:center;}
+.scan-act .btn{padding:16px 24px;font-size:18px;}
+.rcard{width:100%;padding:16px 18px;border-radius:20px;margin-top:22px;display:none;flex-direction:column;gap:12px;
+  box-shadow:0 6px 16px rgba(0,0,0,.18);border-left:5px solid #1565C0;}
+.rcard.show{display:flex;}
+.light .rcard{background:#fff;} .dark .rcard{background:#171C1A;}
+.rc-top{display:flex;align-items:center;gap:14px;}
+.rc-icon{width:54px;height:54px;flex:0 0 54px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#DDE8FF;color:#1565C0;}
+.rc-icon .material-symbols-rounded{font-size:30px;}
+.rc-main{flex:1;}
+.rc-label{font-size:22px;font-weight:800;}
+.light .rc-label{color:#1b211e;} .dark .rc-label{color:#fff;}
+.rc-conf-row{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin:6px 0 4px;}
+.light .rc-conf-row{color:rgba(0,0,0,.55);} .dark .rc-conf-row{color:rgba(255,255,255,.65);}
+.rc-pct{font-weight:800;color:#2E9E5B;}
+.rc-bar{height:7px;border-radius:6px;background:rgba(128,128,128,.22);overflow:hidden;}
+.rc-bar-fill{height:100%;border-radius:6px;background:#2E9E5B;width:92%;transition:width .4s ease;}
+.rc-bin{display:flex;align-items:center;gap:8px;font-size:15px;padding:9px 12px;border-radius:12px;}
+.light .rc-bin{background:#F1F5F3;color:#1b211e;} .dark .rc-bin{background:#0f1413;color:#fff;}
+.rc-bin .material-symbols-rounded{font-size:20px;opacity:.7;}
+.rc-bin-dot{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(128,128,128,.5);flex:0 0 16px;}
+.rc-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.rc-chip{font-size:12px;font-weight:600;padding:5px 10px;border-radius:20px;}
+.light .rc-chip{background:#E8F4EC;color:#2c4036;} .dark .rc-chip{background:#222826;color:#cfe9da;}
+.rc-more{display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-family:inherit;
+  font-size:13px;font-weight:700;padding:8px 0 0;border-top:1px solid rgba(128,128,128,.18);}
+.light .rc-more{color:var(--seed);} .dark .rc-more{color:var(--accent);}
+.rc-more .chev{transition:transform .2s;font-size:20px;}
+.rcard.open .rc-more .chev{transform:rotate(180deg);}
+.rc-detail{display:none;flex-direction:column;gap:12px;}
+.rcard.open .rc-detail{display:flex;}
+.rc-d-h{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:3px;}
+.rc-d-h .material-symbols-rounded{font-size:18px;}
+.light .rc-d-h{color:rgba(0,0,0,.7);} .dark .rc-d-h{color:rgba(255,255,255,.8);}
+.rc-d-t{font-size:14px;line-height:1.4;}
+.light .rc-d-t{color:rgba(0,0,0,.6);} .dark .rc-d-t{color:rgba(255,255,255,.65);}
+
+/* ===== INFO ===== */
+.info-h{display:flex;align-items:center;gap:12px;padding:16px 0;}
+.info-h .material-symbols-rounded{font-size:30px;}
+.light .info-h .material-symbols-rounded{color:var(--seed);} .dark .info-h .material-symbols-rounded{color:var(--accent);}
+.info-h .t{font-size:22px;font-weight:700;}
+.icard{display:flex;flex-direction:column;padding:18px;border-radius:22px;margin-bottom:20px;cursor:pointer;transition:box-shadow .2s;}
+.light .icard{background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.07);} .dark .icard{background:#17181D;}
+.iico{width:65px;height:65px;flex:0 0 65px;border-radius:18px;display:flex;align-items:center;justify-content:center;}
+.iico .material-symbols-rounded{font-size:35px;}
+.dark .iico{background:#24273A!important;}
+.cat-reci{color:#1565C0;} .dark .cat-reci{color:#5B9BE5;}
+.cat-org{color:#2E7D32;} .dark .cat-org{color:#5FBF6A;}
+.cat-no{color:#333;} .dark .cat-no{color:#D0D0D0;}
+.cat-pel{color:#C62828;} .dark .cat-pel{color:#EF5350;}
+.badge-info{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  padding:2px 8px;border-radius:20px;background:#FFF1D6;color:#B26A00;margin-left:6px;vertical-align:middle;}
+.dark .badge-info{background:#3a2f17;color:#E8B860;}
+.info-note{font-size:13px;line-height:1.4;padding:12px 14px;border-radius:14px;margin-bottom:16px;}
+.light .info-note{background:#FFF1D6;color:#7a5200;} .dark .info-note{background:#2a2415;color:#E8C77A;}
+.icard .it{font-size:16px;font-weight:700;}
+.icard .is{font-size:14px;margin:6px 0 8px;}
+.light .icard .is{color:rgba(0,0,0,.6);} .dark .icard .is{color:rgba(255,255,255,.6);}
+.icard .ie{font-size:12px;}
+.light .icard .ie{color:rgba(0,0,0,.55);} .dark .icard .ie{color:rgba(255,255,255,.5);}
+/* ---- desplegable de ejemplos por caneca ---- */
+.icard-head{display:flex;gap:16px;align-items:flex-start;}
+.icard-txt{flex:1;}
+.icard-chev{font-size:24px;transition:transform .25s;opacity:.5;}
+.icard.open .icard-chev{transform:rotate(180deg);}
+.icard-detail{max-height:0;overflow:hidden;transition:max-height .35s ease;}
+.icard.open .icard-detail{max-height:460px;}
+.icard-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(128,128,128,.16);}
+.icard-item{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;}
+.ico-wrap{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
+.ico-wrap{background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+.dark .ico-wrap{background:#222826;box-shadow:none;}
+.ico-wrap .material-symbols-rounded{font-size:28px;}
+.ico-wrap .emoji{width:38px;height:38px;display:block;}
+.icard-item .lbl{font-size:11px;font-weight:600;line-height:1.2;}
+.light .icard-item .lbl{color:rgba(0,0,0,.6);} .dark .icard-item .lbl{color:rgba(255,255,255,.65);}
+.det-reci .ico-wrap{background:#DDE8FF;color:#1565C0;} .dark .det-reci .ico-wrap{background:#24273A;color:#5B9BE5;}
+.det-org .ico-wrap{background:#DFF4D8;color:#2E7D32;} .dark .det-org .ico-wrap{background:#24273A;color:#5FBF6A;}
+.det-no .ico-wrap{background:#E9E9E9;color:#555;} .dark .det-no .ico-wrap{background:#24273A;color:#D0D0D0;}
+.det-pel .ico-wrap{background:#FFE3E3;color:#C62828;} .dark .det-pel .ico-wrap{background:#3A2222;color:#EF5350;}
+
+/* ===== SETTINGS ===== */
+.set-t{font-size:28px;font-weight:700;margin:6px 0 28px;}
+.srow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:18px;}
+.light .srow{background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.08);} .dark .srow{background:#17181D;}
+.srow .lead{font-size:24px;}
+.light .srow .lead{color:var(--seed);} .dark .srow .lead{color:var(--accent);}
+.srow .tx{flex:1;font-size:18px;font-weight:600;}
+.sw{width:52px;height:32px;border-radius:16px;position:relative;flex:0 0 52px;cursor:pointer;border:none;}
+.sw.on{background:rgba(98,230,176,.45);} .sw.off{background:rgba(120,120,120,.4);}
+.sw .knob{position:absolute;top:3px;width:26px;height:26px;border-radius:50%;transition:.2s;}
+.sw.on .knob{left:23px;background:var(--accent);} .sw.off .knob{left:3px;background:#fafafa;}
+.acc{margin-top:16px;border-radius:18px;padding:8px 16px;}
+.light .acc{background:#fff;} .dark .acc{background:#17181D;}
+.acc-h{display:flex;align-items:center;padding:8px 0;cursor:pointer;}
+.acc-h .tx{flex:1;} .acc-ttl{font-size:18px;font-weight:600;} .acc-sub{font-size:13px;}
+.light .acc-sub{color:rgba(0,0,0,.54);} .dark .acc-sub{color:rgba(255,255,255,.6);}
+.acc-h .chev{transition:transform .2s;}
+.acc.open .acc-h .chev{transform:rotate(180deg);}
+.acc-body{border-top:1px solid rgba(128,128,128,.18);padding:10px 0 6px;display:none;align-items:center;gap:12px;}
+.acc.open .acc-body{display:flex;}
+.acc-body .lead{font-size:22px;}
+.light .acc-body .lead{color:var(--seed);} .dark .acc-body .lead{color:var(--accent);}
+.acc-it-t{font-weight:600;font-size:15px;} .acc-it-s{font-size:13px;}
+.light .acc-it-s{color:rgba(0,0,0,.54);} .dark .acc-it-s{color:rgba(255,255,255,.6);}
+.acc-btn{font-weight:700;font-size:14px;background:none;border:none;cursor:pointer;font-family:inherit;}
+.light .acc-btn{color:var(--seed);} .dark .acc-btn{color:var(--accent);}
+</style>
+</head>
+<body>
+  <div class="screen light" id="screen">
+    <div class="views">
+      <!-- ===== HOME ===== -->
+      <section class="view active" id="home">
+        <div class="hdr"><span class="material-symbols-rounded ico">recycling</span><span class="ttl">Clasificador de residuos</span></div>
+        <div class="sub">Escaneo inteligente para separar mejor tus residuos</div>
+        <div class="hero">
+          <div class="feat">
+            <div class="b"><span class="material-symbols-rounded">delete</span></div>
+            <div class="b"><span class="material-symbols-rounded">recycling</span></div>
+            <div class="b"><span class="material-symbols-rounded">delete_forever</span></div>
+          </div>
+          <h2>Recicla inteligentemente</h2>
+          <p>Toma una foto y recibe la clasificación, la caneca correcta y la razón para desecharlo allí.</p>
+          <div class="bullet"><span class="material-symbols-rounded">check_circle</span>Clasificación automática (Orgánicos, Reciclables y No reciclables)</div>
+          <div class="bullet"><span class="material-symbols-rounded">check_circle</span>Indicación de dónde depositarlo</div>
+          <div class="bullet"><span class="material-symbols-rounded">check_circle</span>Explicación clara del porqué</div>
+        </div>
+        <button class="btn btn-primary start" data-go="scan">Comenzar</button>
+      </section>
+
+      <!-- ===== SCAN ===== -->
+      <section class="view" id="scan">
+        <div class="scan-h"><span class="material-symbols-rounded">recycling</span>
+          <div><div class="t1">Clasificador de Residuos</div><div class="t2">Impulsado por IA</div></div></div>
+        <div class="pbox empty" id="pbox"><span class="material-symbols-rounded">photo_camera</span><span class="cam-hint">Pulsa «Tomar foto» para escanear un residuo</span></div>
+        <div class="scan-act">
+          <button class="btn btn-primary" id="takePhoto"><span class="material-symbols-rounded" style="font-variation-settings:'FILL' 0">photo_camera</span>Tomar foto</button>
+          <button class="btn btn-outline" id="clearScan">Limpiar</button>
+        </div>
+        <div class="rcard" id="rcard">
+          <div class="rc-top">
+            <div class="rc-icon" id="rcIconBox"><span class="material-symbols-rounded" id="rcIcon">recycling</span></div>
+            <div class="rc-main">
+              <div class="rc-label" id="rcLabel">Reciclable</div>
+              <div class="rc-conf-row"><span>Confianza</span><span class="rc-pct" id="rcPct">92%</span></div>
+              <div class="rc-bar"><div class="rc-bar-fill" id="rcBar"></div></div>
+            </div>
+          </div>
+          <div class="rc-bin">
+            <span class="rc-bin-dot" id="rcDot"></span>
+            <span class="material-symbols-rounded">delete</span>
+            <span>Va en <b id="rcBinName">Caneca Blanca</b></span>
+          </div>
+          <div class="rc-chips" id="rcChips"></div>
+          <button class="rc-more" id="rcMore"><span class="material-symbols-rounded chev">expand_more</span> Saber más (cómo debe estar y por qué)</button>
+          <div class="rc-detail" id="rcDetail">
+            <div><div class="rc-d-h"><span class="material-symbols-rounded">cleaning_services</span> Cómo debe estar</div><div class="rc-d-t" id="rcCond"></div></div>
+            <div><div class="rc-d-h"><span class="material-symbols-rounded">help</span> Por qué</div><div class="rc-d-t" id="rcWhy"></div></div>
+          </div>
+        </div>
+        <div style="height:14px;flex:0 0 14px"></div>
+      </section>
+
+      <!-- ===== INFO ===== -->
+      <section class="view" id="info">
+        <div class="info-h"><span class="material-symbols-rounded">info</span><span class="t">Guía de separación de residuos</span></div>
+        <div class="info-note">El escáner detecta automáticamente <b>Orgánicos, Reciclables y No reciclables</b>. Los residuos peligrosos se incluyen como guía, pero no se detectan por foto.</div>
+        <div class="icard det-reci">
+          <div class="icard-head">
+            <div class="iico" style="background:#DDE8FF"><span class="material-symbols-rounded cat-reci">recycling</span></div>
+            <div class="icard-txt"><div class="it">Reciclables — Caneca Blanca</div><div class="is">Materiales aprovechables que pueden volver a usarse</div><div class="ie">Pulsa para ver ejemplos</div></div>
+            <span class="material-symbols-rounded icard-chev">expand_more</span>
+          </div>
+          <div class="icard-detail"><div class="icard-grid">
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/plastic_bottle.png" alt="Botellas plásticas"></div><span class="lbl">Botellas plásticas</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/latas.png" alt="Latas"></div><span class="lbl">Latas</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/carton.png" alt="Cartón"></div><span class="lbl">Cartón</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/vidrio.png" alt="Frascos de vidrio"></div><span class="lbl">Frascos de vidrio</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/papel.png" alt="Papel"></div><span class="lbl">Papel</span></div>
+          </div></div>
+        </div>
+        <div class="icard det-org">
+          <div class="icard-head">
+            <div class="iico" style="background:#DFF4D8"><span class="material-symbols-rounded cat-org">eco</span></div>
+            <div class="icard-txt"><div class="it">Orgánicos — Caneca Verde</div><div class="is">Residuos biodegradables de origen natural</div><div class="ie">Pulsa para ver ejemplos</div></div>
+            <span class="material-symbols-rounded icard-chev">expand_more</span>
+          </div>
+          <div class="icard-detail"><div class="icard-grid">
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/cascaras.png" alt="Cáscaras de fruta"></div><span class="lbl">Cáscaras de fruta</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/restos_comida.png" alt="Restos de comida"></div><span class="lbl">Restos de comida</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/restos_verdura.png" alt="Restos de verdura"></div><span class="lbl">Restos de verdura</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/hojas.png" alt="Hojas y poda"></div><span class="lbl">Hojas y poda</span></div>
+          </div></div>
+        </div>
+        <div class="icard det-no">
+          <div class="icard-head">
+            <div class="iico" style="background:#E5E5E5"><span class="material-symbols-rounded cat-no">delete_forever</span></div>
+            <div class="icard-txt"><div class="it">No reciclables — Caneca Negra</div><div class="is">Residuos que no pueden reutilizarse ni reciclarse</div><div class="ie">Pulsa para ver ejemplos</div></div>
+            <span class="material-symbols-rounded icard-chev">expand_more</span>
+          </div>
+          <div class="icard-detail"><div class="icard-grid">
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/servilletas.png" alt="Servilletas"></div><span class="lbl">Servilletas</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/icopor.png" alt="Icopor"></div><span class="lbl">Icopor</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/colillas.png" alt="Colillas"></div><span class="lbl">Colillas</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/empaques.png" alt="Envolturas"></div><span class="lbl">Envolturas</span></div>
+          </div></div>
+        </div>
+        <div class="icard det-pel">
+          <div class="icard-head">
+            <div class="iico" style="background:#FFE3E3"><span class="material-symbols-rounded cat-pel">warning</span></div>
+            <div class="icard-txt"><div class="it">Peligrosos — Punto Especial <span class="badge-info">Solo informativo</span></div><div class="is">Residuos tóxicos que requieren manejo especial</div><div class="ie">Pulsa para ver ejemplos</div></div>
+            <span class="material-symbols-rounded icard-chev">expand_more</span>
+          </div>
+          <div class="icard-detail"><div class="icard-grid">
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/pilas.png" alt="Pilas"></div><span class="lbl">Pilas</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/medicamentos.png" alt="Medicamentos"></div><span class="lbl">Medicamentos</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/aceites.png" alt="Aceites usados"></div><span class="lbl">Aceites usados</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/quimicos.png" alt="Químicos"></div><span class="lbl">Químicos</span></div>
+            <div class="icard-item"><div class="ico-wrap"><img class="emoji" loading="lazy" src="img/bombillos.png" alt="Bombillos"></div><span class="lbl">Bombillos</span></div>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- ===== SETTINGS ===== -->
+      <section class="view" id="settings">
+        <div class="set-t">Configuración</div>
+        <div class="srow"><span class="material-symbols-rounded lead">dark_mode</span><span class="tx">Modo oscuro</span>
+          <button class="sw off" id="themeSwitch"><span class="knob"></span></button></div>
+        <div class="acc open" id="acc">
+          <div class="acc-h" id="accHead">
+            <div class="tx"><div class="acc-ttl">Permisos de la aplicación</div><div class="acc-sub">Gestiona acceso a cámara</div></div>
+            <span class="material-symbols-rounded chev">expand_more</span></div>
+          <div class="acc-body">
+            <span class="material-symbols-rounded lead">photo_camera</span>
+            <div style="flex:1"><div class="acc-it-t">Cámara</div><div class="acc-it-s">Necesario para escanear residuos</div></div>
+            <button class="acc-btn">Configurar</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===== NAV ===== -->
+    <nav class="nav">
+      <button class="nav-item active" data-go="home"><span class="material-symbols-rounded">home</span><span class="lbl">Inicio</span></button>
+      <button class="nav-item" data-go="scan"><span class="material-symbols-rounded">photo_camera</span><span class="lbl">Escanear</span></button>
+      <button class="nav-item" data-go="info"><span class="material-symbols-rounded">info</span><span class="lbl">Info</span></button>
+      <button class="nav-item" data-go="settings"><span class="material-symbols-rounded">settings</span><span class="lbl">Ajustes</span></button>
+    </nav>
+  </div>
+
+<script>
+  const screen = document.getElementById('screen');
+
+  // --- navegación entre vistas ---
+  function go(id){
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id===id));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.go===id));
+    document.querySelector('.views').scrollTop = 0;
+  }
+  document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
+
+  // --- tema claro/oscuro (switch en Ajustes) ---
+  const sw = document.getElementById('themeSwitch');
+  function syncBtns(){
+    const dark = screen.classList.contains('dark');
+    document.querySelectorAll('.btn-primary').forEach(b=>{b.classList.toggle('dark',dark);b.classList.toggle('light',!dark);});
+  }
+  sw.addEventListener('click',()=>{
+    const dark = sw.classList.contains('off'); // pasa a oscuro
+    sw.classList.toggle('off',!dark); sw.classList.toggle('on',dark);
+    screen.classList.toggle('dark',dark); screen.classList.toggle('light',!dark);
+    syncBtns();
+  });
+  syncBtns();
+
+  // --- acordeón permisos ---
+  document.getElementById('accHead').addEventListener('click',()=>document.getElementById('acc').classList.toggle('open'));
+
+  // --- escaneo simulado ---
+  const pbox=document.getElementById('pbox'), rcard=document.getElementById('rcard');
+  const CATS=[
+    {label:'Reciclable',icon:'recycling',conf:92,bin:'Caneca Blanca',accent:'#1565C0',tint:'#DDE8FF',dot:'#FFFFFF',
+      ej:['Botella PET','Lata','Cartón','Vidrio','Papel'],
+      cond:'Límpialo y déjalo seco. Sin restos de comida ni líquidos dentro.',
+      why:'Con este material se pueden hacer cosas nuevas, por eso no se bota: se aprovecha otra vez.'},
+    {label:'Orgánico',icon:'eco',conf:88,bin:'Caneca Verde',accent:'#2E7D32',tint:'#DFF4D8',dot:'#43A047',
+      ej:['Cáscaras','Restos de comida','Hojas','Semillas'],
+      cond:'Solo material natural. Sin empaques, bolsas ni plásticos.',
+      why:'Viene de plantas o comida, se pudre fácil y se convierte en abono para la tierra.'},
+    {label:'No reciclable',icon:'delete_forever',conf:79,bin:'Caneca Negra',accent:'#555',tint:'#E5E5E5',dot:'#9E9E9E',
+      ej:['Servilleta usada','Icopor sucio','Papel sucio','Empaques mezclados'],
+      cond:'Materiales mezclados o contaminados que no se pueden separar.',
+      why:'Está sucio o mezcla varios materiales, así que no se puede reusar. Va directo a la basura.'}
+  ];
+  let ci=-1;
+  const cc=c=> c>=85?'#2E9E5B' : c>=70?'#E0A100' : '#D14343';
+  function showResult(){
+    ci=(ci+1)%CATS.length; const c=CATS[ci];
+    rcard.style.borderLeftColor=c.accent;
+    document.getElementById('rcIcon').textContent=c.icon;
+    const box=document.getElementById('rcIconBox'); box.style.background=c.tint; box.style.color=c.accent;
+    document.getElementById('rcLabel').textContent=c.label;
+    const pct=document.getElementById('rcPct'); pct.textContent=c.conf+'%'; pct.style.color=cc(c.conf);
+    const bar=document.getElementById('rcBar'); bar.style.width=c.conf+'%'; bar.style.background=cc(c.conf);
+    document.getElementById('rcBinName').textContent=c.bin;
+    document.getElementById('rcDot').style.background=c.dot;
+    document.getElementById('rcChips').innerHTML=c.ej.map(e=>'<span class="rc-chip">'+e+'</span>').join('');
+    document.getElementById('rcCond').textContent=c.cond;
+    document.getElementById('rcWhy').textContent=c.why;
+    rcard.classList.add('show');
+  }
+  document.getElementById('takePhoto').addEventListener('click',()=>{
+    pbox.classList.remove('empty');
+    pbox.innerHTML='<span class="material-symbols-rounded" style="font-size:90px">image</span>';
+    showResult();
+  });
+  document.getElementById('clearScan').addEventListener('click',()=>{
+    pbox.classList.add('empty');
+    pbox.innerHTML='<span class="material-symbols-rounded">photo_camera</span><span class="cam-hint">Pulsa «Tomar foto» para escanear un residuo</span>';
+    rcard.classList.remove('show'); rcard.classList.remove('open'); ci=-1;
+  });
+  document.getElementById('rcMore').addEventListener('click',()=>rcard.classList.toggle('open'));
+
+  // --- desplegable de ejemplos en las tarjetas de Info ---
+  document.querySelectorAll('#info .icard').forEach(card=>{
+    card.addEventListener('click',()=>card.classList.toggle('open'));
+  });
+</script>
+
+<!-- =========================================================
+     SNIPPET DE USEBERRY  (opcional, para captura fiable)
+     Pega aquí el código que te da Useberry en:
+     Project → Website testing → "Snippet method".
+     Va justo antes de </body>.
+     ========================================================= -->
+<!-- INICIO SNIPPET USEBERRY -->
+
+<!-- FIN SNIPPET USEBERRY -->
+</body>
+</html>
