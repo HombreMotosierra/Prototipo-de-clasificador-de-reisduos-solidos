@@ -66,11 +66,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0a;}
 .nav-item.active .lbl{font-weight:700;}
 
 /* ===== HOME ===== */
-.feat{display:flex;gap:12px;}
+.feat{display:flex;gap:12px;justify-content:center;}
 .feat .b{width:62px;height:62px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
 .feat .b .material-symbols-rounded{font-size:34px;}
 .light .feat .b{background:#E8F4EC;color:var(--seed);} .dark .feat .b{background:#222826;color:var(--accent);}
-.hero{padding:20px 20px 16px;flex:1;display:flex;flex-direction:column;border-radius:24px;margin-top:20px;}
+.hero{padding:28px 22px 22px;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border-radius:24px;margin-top:20px;}
 .light .hero{background:#fff;border:1px solid #CAE2D2;}
 .dark .hero{background:#171C1A;border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 14px rgba(0,0,0,.35);}
 .hero h2{font-size:28px;font-weight:800;line-height:1.1;margin:16px 0 10px;}
@@ -107,8 +107,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0a;}
 .rc-icon{width:54px;height:54px;flex:0 0 54px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#DDE8FF;color:#1565C0;}
 .rc-icon .material-symbols-rounded{font-size:30px;}
 .rc-main{flex:1;}
-.rc-label{font-size:22px;font-weight:800;}
-.light .rc-label{color:#1b211e;} .dark .rc-label{color:#fff;}
+.rc-bin-head{display:flex;align-items:center;gap:10px;}
+.rc-bin-title{font-size:23px;font-weight:800;line-height:1.15;}
+.light .rc-bin-title{color:#1b211e;} .dark .rc-bin-title{color:#fff;}
+.rc-class{display:inline-block;align-self:flex-start;font-size:13px;font-weight:700;margin-top:9px;padding:4px 13px;border-radius:20px;}
+.light .rc-class{background:#EAF3EE;color:#2c4036;} .dark .rc-class{background:#222826;color:#cfe9da;}
 .rc-conf-row{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin:6px 0 4px;}
 .light .rc-conf-row{color:rgba(0,0,0,.55);} .dark .rc-conf-row{color:rgba(255,255,255,.65);}
 .rc-pct{font-weight:800;color:#2E9E5B;}
@@ -221,10 +224,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0a;}
             <div class="b"><span class="material-symbols-rounded">delete_forever</span></div>
           </div>
           <h2>Recicla inteligentemente</h2>
-          <p>Toma una foto y recibe la clasificación, la caneca correcta y la razón para desecharlo allí.</p>
-          <div class="bullet"><span class="material-symbols-rounded">check_circle</span>Clasificación automática (Orgánicos, Reciclables y No reciclables)</div>
-          <div class="bullet"><span class="material-symbols-rounded">check_circle</span>Indicación de dónde depositarlo</div>
-          <div class="bullet"><span class="material-symbols-rounded">check_circle</span>Explicación clara del porqué</div>
+          <p>Toma una foto para saber dónde debes depositar correctamente el residuo.</p>
         </div>
         <button class="btn btn-primary start" data-go="scan">Comenzar</button>
       </section>
@@ -242,17 +242,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0a;}
           <div class="rc-top">
             <div class="rc-icon" id="rcIconBox"><span class="material-symbols-rounded" id="rcIcon">recycling</span></div>
             <div class="rc-main">
-              <div class="rc-label" id="rcLabel">Reciclable</div>
-              <div class="rc-conf-row"><span>Confianza</span><span class="rc-pct" id="rcPct">92%</span></div>
-              <div class="rc-bar"><div class="rc-bar-fill" id="rcBar"></div></div>
+              <div class="rc-bin-head"><span class="rc-bin-dot" id="rcDot"></span><span class="rc-bin-title">Va en <b id="rcBinName">Caneca Blanca</b></span></div>
+              <div class="rc-class" id="rcLabel">Reciclable</div>
             </div>
           </div>
-          <div class="rc-bin">
-            <span class="rc-bin-dot" id="rcDot"></span>
-            <span class="material-symbols-rounded">delete</span>
-            <span>Va en <b id="rcBinName">Caneca Blanca</b></span>
-          </div>
-          <div class="rc-chips" id="rcChips"></div>
+          <div class="rc-conf-row"><span>Confianza</span><span class="rc-pct" id="rcPct">92%</span></div>
+          <div class="rc-bar"><div class="rc-bar-fill" id="rcBar"></div></div>
           <button class="rc-more" id="rcMore"><span class="material-symbols-rounded chev">expand_more</span> Saber más (cómo debe estar y por qué)</button>
           <div class="rc-detail" id="rcDetail">
             <div><div class="rc-d-h"><span class="material-symbols-rounded">cleaning_services</span> Cómo debe estar</div><div class="rc-d-t" id="rcCond"></div></div>
@@ -405,7 +400,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:#0a0a0a;}
     const bar=document.getElementById('rcBar'); bar.style.width=c.conf+'%'; bar.style.background=cc(c.conf);
     document.getElementById('rcBinName').textContent=c.bin;
     document.getElementById('rcDot').style.background=c.dot;
-    document.getElementById('rcChips').innerHTML=c.ej.map(e=>'<span class="rc-chip">'+e+'</span>').join('');
     document.getElementById('rcCond').textContent=c.cond;
     document.getElementById('rcWhy').textContent=c.why;
     rcard.classList.add('show');
